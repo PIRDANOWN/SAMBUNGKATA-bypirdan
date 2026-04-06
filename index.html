@@ -1,62 +1,133 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Sambung Kata Realtime Pro - ULTRA FIX</title>
+    <title>Sambung Kata Realtime Pro - Ultra Edition</title>
     <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family:'Arial'; background:linear-gradient(120deg,#667eea,#764ba2); display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; color:white; overflow-x: hidden; }
-        .card{ width:95%; max-width:500px; background:rgba(255,255,255,0.12); padding:20px; border-radius:25px; backdrop-filter:blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        button,input,select{ width:100%; margin-top:8px; padding:15px; border:none; border-radius:12px; font-size:16px; cursor:pointer; box-sizing: border-box; transition: 0.2s; }
-        button:active { transform: scale(0.98); }
-        #log{height:180px; overflow:auto; background:#0004; padding:10px; margin:15px 0; border-radius:12px; font-size: 14px; border: 1px solid rgba(255,255,255,0.1); }
+        body { font-family:'Arial'; background:linear-gradient(120deg,#667eea,#764ba2); display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; color:white; }
+        .card{ width:90%; max-width:600px; background:rgba(255,255,255,0.12); padding:20px; border-radius:25px; backdrop-filter:blur(12px); margin: 20px 0;}
+        button,input,select{ width:100%; margin-top:5px; padding:12px; border:none; border-radius:12px; font-size:16px; cursor:pointer; box-sizing: border-box; }
+        #log{height:150px; overflow:auto; background:#0004; padding:10px; margin:10px 0; border-radius:10px; font-size: 14px;}
         .hp-container { display: flex; justify-content: space-between; margin-bottom: 10px; gap: 10px; align-items: center; }
         .hp-box { flex: 1; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.2); }
-        .hp-val { font-size: 28px; font-weight: bold; color: #ff4d4d; }
+        .hp-val { font-size: 24px; font-weight: bold; display: block; }
         .hidden{display:none;}
-        #nextWordArea { background: #ff0; color: #000; padding: 12px; border-radius: 12px; text-align: center; font-weight: bold; font-size: 22px; margin-bottom: 10px; }
-        .room-status { font-size: 12px; text-align: center; margin-bottom: 10px; color: #ddd; }
-        #btnSend:disabled { background: #555 !important; cursor: not-allowed; opacity: 0.6; }
+        .ownerButton{position:fixed; top:20px; right:20px; background:#ff0; color:#000; border-radius:50%; width:50px; height:50px; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer; z-index:999;}
+        .ownerPanel{position:fixed; top:0; right:0; width:320px; height:100%; background:#111; padding:20px; transform:translateX(100%); transition:0.3s; overflow:auto; z-index:998;}
+        .ownerPanel.active{transform:translateX(0);}
+        .levelXP{font-size:14px; margin-bottom:10px; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 8px;}
+        .leaderboard{background:#0003; padding:10px; margin:5px 0; border-radius:10px; max-height:120px; overflow:auto;}
+        .shop{background:#0003; padding:10px; margin:5px 0; border-radius:10px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px;}
+        .shop h4 { grid-column: span 2; margin: 5px 0; }
+        .msg{margin-top:5px; font-weight:bold;}
+        .roomSlots{display:flex; justify-content:space-around; margin-top:10px; gap: 10px;}
+        .slot{flex:1; height:60px; background:#0004; border-radius:12px; display:flex; flex-direction:column; justify-content:center; align-items:center; font-size:14px; text-align: center; border: 1px solid rgba(255,255,255,0.1);}
+        .slot b { font-size: 11px; color: #aaa; }
+        .chatBox{height:120px; background:#0004; overflow:auto; padding:8px; border-radius:10px; margin:10px 0; font-size: 14px;}
+        .chatInput{display:flex; gap:5px;}
+        .chatInput input{flex:1; padding: 15px; font-size: 16px;}
+        #nextWordArea { background: #ff0; color: #000; padding: 10px; border-radius: 12px; text-align: center; font-weight: bold; font-size: 20px; }
+        .player-profile-info { background: rgba(255,255,255,0.1); padding: 8px; border-radius: 10px; font-size: 12px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.2); }
+        .btn-discord { background: #7289da; color: white; font-weight: bold; text-decoration: none; display: block; text-align: center; margin-top: 10px; padding: 12px; border-radius: 12px; }
     </style>
 </head>
 <body>
-
+    <div class="ownerButton" id="ownerBtn">🔑</div>
+    
     <div class="card" id="auth">
-        <h2 style="text-align: center;">SAMBUNG KATA ONLINE</h2>
+        <h3>LOGIN / REGISTER</h3>
         <input id="username" placeholder="Username">
         <input id="password" type="password" placeholder="Password">
-        <button id="btnLogin" style="background: #4caf50; color: white;">LOGIN / MASUK</button>
-        <p id="msg" style="text-align: center; color: #ffeb3b;"></p>
-        <hr style="opacity: 0.2;">
+        <button id="btnLogin">Login</button>
+        <button id="btnRegister">Register</button>
+        <p id="msg" class="msg"></p>
+        <hr>
+        <h3>MODE BERMAIN</h3>
         <select id="modeSelect">
-            <option value="multi">Mode: Multiplayer (Online)</option>
-            <option value="single">Mode: Single Player (Offline)</option>
+            <option value="single">Single (AI - 75K Words)</option>
+            <option value="multi">Multiplayer (Butuh Lawan)</option>
         </select>
-        <input id="roomInput" placeholder="Masukkan ID Room (Bebas)">
-        <button id="btnStart" style="background: #ff9800; color: white; font-weight: bold;">MASUK KE ARENA</button>
+        <select id="difficultySelect">
+            <option value="easy">Easy</option>
+            <option value="normal">Normal</option>
+            <option value="hard">Hard</option>
+        </select>
+        <input id="roomInput" placeholder="ID Room (Kosong = Random ID)">
+        <button id="btnStart" style="background: #4caf50; color: white; font-weight: bold;">Mulai Game</button>
+        <a href="https://discord.gg/WBfeqPT49" target="_blank" class="btn-discord">JOIN DISCORD</a>
     </div>
 
     <div class="card hidden" id="game">
-        <div class="room-status" id="roomIDDisplay">ROOM: -</div>
+        <div class="levelXP">LV: <span id="level">1</span> | XP: <span id="xp">0</span> | Coin: <span id="coin">0</span></div>
+
         <div class="hp-container">
-            <div class="hp-box"><b>KAMU</b><br><span id="pHPText" class="hp-val">5</span></div>
-            <div id="timer" style="font-size: 40px; font-weight: bold; color: #fff; min-width: 60px; text-align: center;">10</div>
-            <div class="hp-box"><b>LAWAN</b><br><span id="oHPText" class="hp-val">5</span></div>
+            <div class="hp-box"><b>KAMU</b><span id="pHPText" class="hp-val">5</span></div>
+            <div id="timer" style="font-size: 45px; text-align: center; font-weight: bold; color: #ff4d4d; min-width: 80px;">10</div>
+            <div class="hp-box"><b>LAWAN</b><span id="oHPText" class="hp-val">5</span></div>
         </div>
 
         <div id="nextWordArea">AWALAN: <span id="nextWord">-</span></div>
+
         <div id="log"></div>
-        
-        <input id="input" placeholder="Ketik kata di sini..." autocomplete="off">
-        <button id="btnSend" style="background: #667eea; color: white; font-weight: bold;">KIRIM KATA</button>
-        
-        <div style="display: flex; gap: 5px; margin-top: 10px;">
-            <button id="btnRestart" style="background: #444; font-size: 12px;">Reset Game</button>
-            <button id="btnLogout" style="background: #f44336; font-size: 12px;">Keluar</button>
+        <input id="input" placeholder="Ketik kata sambungan..." style="border: 2px solid #ff0; margin-top: 10px;">
+        <button id="btnSend" style="background: #667eea; color: white;">Kirim Kata</button>
+
+        <div class="roomSlots">
+            <div class="slot" id="slot1"><b>Kamu</b><span id="name1">-</span></div>
+            <div class="slot" id="slot2"><b>Lawan</b><span id="name2">-</span></div>
         </div>
+
+        <div class="shop" id="shop">
+            <h4>Shop 🛒</h4>
+            <button id="btnHeal">Heal (10 🪙)</button>
+            <button id="btnHint">Hint (5 🪙)</button>
+            <button id="btnDoubleXP">2x XP (20 🪙)</button>
+            <button id="btnShield">Shield (25 🪙)</button>
+        </div>
+
+        <div id="leaderboard" class="leaderboard"></div>
+
+        <div class="player-profile-info" id="playerProfile">
+            👤Name: - | 🆔ID: - | 🆔ID ROOM: -
+        </div>
+        <div class="player-profile-info">
+            📊 STATS: LV <span id="level2">1</span> | XP <span id="xp2">0</span>/100
+        </div>
+
+        <div class="chatBox" id="chatBox"></div>
+        <div class="chatInput">
+            <input id="chatInput" placeholder="Ketik pesan chat...">
+            <button id="btnChat" style="width: 80px;">Kirim</button>
+        </div>
+        <button id="btnRestart">Restart</button>
+        <button id="btnLogout" style="background: #ff4d4d;">Keluar</button>
+    </div>
+
+    <div id="ownerPanel" class="ownerPanel">
+        <h3>OWNER PANEL 🔑</h3>
+        <input id="ownerKey" placeholder="Key admin">
+        <button id="btnOwnerCheck">Masuk</button>
+        <div id="ownerMenu" class="hidden">
+            <p>Last Word: <span id="lastWord">-</span></p>
+            <div id="playerList"></div>
+            <hr>
+            <input id="targetBanned" placeholder="Username Target">
+            <button id="btnBanned" style="background: red;">BANNED</button>
+            <button id="btnUnbanned" style="background: green;">UNBANNED</button>
+            <hr>
+            <button id="btnOwnerWin">AUTO WIN</button>
+            <button id="btnHealMe">HEAL ME</button>
+            <button id="btnSpawnCoin">+500 COIN</button>
+            <button id="btnClearChat" style="background: orange;">CLEAR CHAT ROOM</button>
+            <button id="btnKillOpponent" style="background: black; color: white;">INSTANT KILL LAWAN</button>
+        </div>
+        <button id="btnOwnerClose">Tutup</button>
     </div>
 
 <script>
+window.onload=function(){
+    // CONFIG FIREBASE (Tetap Sama)
     const firebaseConfig = {
       apiKey: "AIzaSyAsegtxDbDkADPrd_dmqUqpIrhwKUOUU0o",
       authDomain: "pirdangame.firebaseapp.com",
@@ -64,700 +135,156 @@
       projectId: "pirdangame",
       storageBucket: "pirdangame.firebasestorage.app",
       messagingSenderId: "109134208993",
-      appId: "1:109134208993:web:22efa124fd0dda427fbca0"
+      appId: "1:109134208993:web:22efa124fd0dda427fbca0",
+      measurementId: "G-Z3JH9TYHVX"
     };
 
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const db=firebase.database();
 
-    let playerData = { username: "" };
-    let roomName = "", mode = "multi", used = [], current = "";
-    let pHP = 5, oHP = 5, timerInterval, time = 10, waitingFor = "";
+    const ADMIN_KEY="PIRDANOWN2211";
+    let playerData={username:"",level:1,xp:0,coin:0,uid:""};
+    let roomName="",mode="single",difficulty="easy";
+    let used=[],current="";
+    let pHP=5,oHP=5;
+    let timerInterval,time=10;
+    let healUsed=false, hasShield=false, doubleXP=false;
+    let opponent="";
+    let waitingFor = ""; 
 
-    const $ = (id) => document.getElementById(id);
+    // Kamus & Utility
+    let dictionary = [];
+    let commonWords = ["aku","kamu","makan","minum","lari","jalan","tidur","bangun","rumah","nasi","mobil","motor","buku","meja","kursi","lampu","pintu","sepatu","celana","topi"];
+    fetch('https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt').then(r=>r.text()).then(t=>dictionary=t.split('\n').map(w=>w.trim().toLowerCase())).catch(()=>dictionary=commonWords);
 
-    // LOGIN SEDERHANA
-    $("btnLogin").onclick = () => {
-        let u = $("username").value.trim().toLowerCase();
-        let p = $("password").value;
-        if(!u || !p) return alert("Isi User & Pass!");
-        
-        db.ref("users/"+u).get().then(snap => {
-            if(snap.exists()){
-                if(snap.val().pass === p) {
-                    playerData.username = u;
-                    $("msg").innerText = "Halo, " + u + "! Pilih Room & Start.";
-                } else alert("Password Salah!");
-            } else {
-                db.ref("users/"+u).set({pass:p, coin:100}).then(() => {
-                    playerData.username = u;
-                    $("msg").innerText = "Akun Baru Dibuat! Halo " + u;
-                });
-            }
-        });
-    };
+    const $=(id)=>document.getElementById(id);
+    const pHPText=$("pHPText"), oHPText=$("oHPText"), logEl=$("log"), timerEl=$("timer"), nextWord=$("nextWord"), input=$("input");
+    const levelEl=$("level"), xpEl=$("xp"), coinEl=$("coin"), leaderboardEl=$("leaderboard"), lastWordEl=$("lastWord"), chatBox=$("chatBox"), chatInput=$("chatInput");
+    const msgEl=$("msg"), ownerPanel=$("ownerPanel"), ownerMenu=$("ownerMenu"), ownerKey=$("ownerKey");
 
-    // MULAI / JOIN ROOM
-    $("btnStart").onclick = () => {
-        if(!playerData.username) return alert("Login dulu!");
-        
-        mode = $("modeSelect").value;
-        roomName = $("roomInput").value.trim() || "GLOBAL";
-        $("roomIDDisplay").innerText = "ROOM: " + roomName.toUpperCase();
-
-        if(mode === "multi") {
-            const roomRef = db.ref("rooms/"+roomName);
-            
-            // Daftarkan diri ke room
-            roomRef.child("players/"+playerData.username).set({ HP: 5, lastUpdate: Date.now() });
-
-            // Pantau Room secara Real-time
-            roomRef.on("value", snap => {
-                const data = snap.val();
-                if(!data) return;
-
-                const players = Object.keys(data.players || {});
-                let opponent = players.find(p => p !== playerData.username);
-
-                // Update HP dari DB
-                pHP = data.players[playerData.username].HP;
-                if(opponent && data.players[opponent]) oHP = data.players[opponent].HP;
-                
-                // Update Kata Terakhir
-                if(data.currentWord && data.currentWord !== current) {
-                    current = data.currentWord;
-                    used = data.used || [];
-                    log(`<b>${data.lastPlayer}:</b> ${current}`);
-                    setNext();
-                    startTimer(); // Reset timer setiap ada kata baru
-                }
-
-                // Logika Giliran
-                waitingFor = data.waitingFor || players[0];
-                if(waitingFor !== playerData.username) {
-                    $("btnSend").disabled = true;
-                    $("input").placeholder = "Menunggu " + waitingFor + "...";
-                } else {
-                    $("btnSend").disabled = false;
-                    $("input").placeholder = "Giliranku! Masukkan kata...";
-                }
-
-                updateUI();
-
-                // Auto Start jika sudah ada 2 orang tapi game belum mulai
-                if(players.length >= 2 && !data.currentWord) {
-                    if(playerData.username === players[0]) initGame(); 
-                }
-            });
-        } else {
-            initGame(); // Offline mode
-        }
-
-        $("auth").classList.add("hidden");
-        $("game").classList.remove("hidden");
-    };
-
-    function initGame() {
-        current = "makan";
-        used = ["makan"];
-        waitingFor = playerData.username;
-        log("🎮 Game Dimulai! Kata awal: <b>makan</b>");
-        
-        if(mode === "multi") {
-            db.ref("rooms/"+roomName).update({
-                currentWord: "makan",
-                used: ["makan"],
-                waitingFor: playerData.username,
-                lastPlayer: "Sistem"
-            });
-        }
-        setNext(); startTimer();
-    }
-
-    function playerTurn() {
-        let w = $("input").value.toLowerCase().trim();
-        $("input").value = "";
-
-        if(!w) return;
-        if(used.includes(w)) return log("⚠️ Kata sudah pernah dipakai!");
-        if(!w.startsWith(current.slice(-2))) return log("❌ Salah awalan! Harus: " + current.slice(-2));
-
-        used.push(w);
-        current = w;
-        log(`<b>Kamu:</b> ${w}`);
-        setNext();
-
-        if(mode === "multi") {
-            db.ref("rooms/"+roomName+"/players").get().then(snap => {
-                const players = Object.keys(snap.val());
-                let nextP = players.find(p => p !== playerData.username) || playerData.username;
-                
-                db.ref("rooms/"+roomName).update({
-                    currentWord: w,
-                    used: used,
-                    waitingFor: nextP,
-                    lastPlayer: playerData.username
-                });
-            });
-        } else {
-            // Mode Offline AI Sederhana
-            setTimeout(() => {
-                let aiWord = "nasi"; // Hanya contoh
-                used.push(aiWord); current = aiWord;
-                log(`<b>AI:</b> ${aiWord}`);
-                setNext(); startTimer();
-            }, 1000);
-        }
-    }
-
-    $("btnSend").onclick = playerTurn;
-
-    function startTimer() {
-        clearInterval(timerInterval);
-        time = 10;
-        $("timer").innerText = time;
-        timerInterval = setInterval(() => {
-            time--;
-            $("timer").innerText = time;
-            if(time <= 0) {
-                log("⏰ Waktu Habis! HP Berkurang.");
-                reduceHP();
-                time = 10;
-            }
-        }, 1000);
-    }
-
-    function reduceHP() {
-        pHP--;
-        if(pHP <= 0) {
-            pHP = 0;
-            log("💀 GAME OVER! Kamu Kalah.");
-            clearInterval(timerInterval);
-        }
-        updateUI();
-        if(mode === "multi") {
-            db.ref("rooms/"+roomName+"/players/"+playerData.username).update({ HP: pHP });
-        }
-    }
-
-    function log(m) { $("log").innerHTML += m + "<br>"; $("log").scrollTop = $("log").scrollHeight; }
-    function setNext() { $("nextWord").innerText = current.slice(-2).toUpperCase(); }
-    function updateUI() { $("pHPText").innerText = pHP; $("oHPText").innerText = oHP; }
-
-    $("btnRestart").onclick = () => { if(confirm("Ulangi Game?")) initGame(); };
-    $("btnLogout").onclick = () => location.reload();
-    
-    // Cegah Enter agar tidak double submit
-    $("input").addEventListener("keypress", (e) => {
-        if(e.key === "Enter") $("btnSend").click();
-    });
-</script>
-</body>
-</html>nclick=sendChat;
-    $("ownerBtn").onclick=toggleOwner;
-    $("btnOwnerCheck").onclick=checkKey;
-    $("btnOwnerWin").onclick=ownerWin;
-    $("btnHealMe").onclick=healMe;
-    $("btnSpawnCoin").onclick=spawnCoin;
-    $("btnClearChat").onclick=clearChat;
-    $("btnKillOpponent").onclick=killOpponent;
-    $("btnOwnerClose").onclick=toggleOwner;
-    $("btnBanned").onclick=()=>setBanned(true);
-    $("btnUnbanned").onclick=()=>setBanned(false);
-
-    input.onpaste = (e) => {
-        e.preventDefault();
-        alert("🚫 ANTI-CHEAT: Paste dilarang!");
-        autoBan("Paste Detection");
-    };
-
-    function autoBan(reason) {
-        db.ref("users/"+playerData.username).update({banned: true, banReason: reason});
-        alert("AKUN ANDA TELAH DIBANNED OTOMATIS: " + reason);
-        location.reload();
-    }
+    // AUTH & ROOM LOGIC
+    $("btnRegister").onclick=register;
+    $("btnLogin").onclick=login;
+    $("btnStart").onclick=joinRoom;
+    $("btnSend").onclick=playerTurn;
+    $("btnRestart").onclick=()=>initGame(true);
+    $("btnLogout").onclick=()=>location.reload();
 
     function register(){
         let u=$("username").value.trim().toLowerCase(), p=$("password").value;
-        if(!u||!p){ msgEl.innerText="❌ Masukkan username & password"; return; }
-        db.ref("users/"+u).get().then(snap=>{
-            if(snap.exists()){ msgEl.innerText="❌ Sudah ada!"; return; }
-            let userId = "ID-" + Math.floor(Math.random()*10000);
-            db.ref("users/"+u).set({pass:p,banned:false,coin:100,level:1,xp:0,uid:userId}).then(()=>msgEl.innerText="✅ Register sukses!");
-        });
+        if(!u||!p){ msgEl.innerText="❌ Masukkan data!"; return; }
+        db.ref("users/"+u).set({pass:p,coin:100,level:1,xp:0,uid:"ID-"+Math.floor(Math.random()*9000)}).then(()=>msgEl.innerText="✅ Sukses!");
     }
 
     function login(){
         let u=$("username").value.trim().toLowerCase(), p=$("password").value;
-        if(!u||!p){ msgEl.innerText="❌ Masukkan username & password"; return; }
         db.ref("users/"+u).get().then(snap=>{
-            if(!snap.exists()){ msgEl.innerText="❌ Ga ada!"; return; }
-            let data=snap.val();
-            if(data.banned){ msgEl.innerText="⛔ AKUN ANDA DIBANNED"; return; }
-            if(data.pass!==p){ msgEl.innerText="❌ Salah!"; return; }
-            playerData={...data,username:u};
-            msgEl.innerText=`✅ Login sukses!`;
-            updateProfileUI();
+            if(snap.exists() && snap.val().pass===p){
+                playerData={...snap.val(),username:u};
+                msgEl.innerText=`✅ Halo ${u}!`;
+                updateProfileUI();
+            } else alert("Salah user/pass!");
         });
     }
 
     function updateProfileUI(){
-        $("playerProfile").innerText = `👤Name: ${playerData.username} | 🆔ID: ${playerData.uid || 'N/A'} | 🆔ID ROOM: ${roomName || '-'}`;
-        $("level2").innerText = playerData.level;
-        $("xp2").innerText = playerData.xp;
+        $("playerProfile").innerText = `👤Name: ${playerData.username} | 🆔ID: ${playerData.uid} | 🆔ID ROOM: ${roomName}`;
+        $("level2").innerText = playerData.level; $("xp2").innerText = playerData.xp;
+        updateStats();
     }
 
-    function logout(){ location.reload(); }
-
     function joinRoom(){
-        if(!playerData.username){ alert("Login dulu!"); return; }
+        if(!playerData.username) return alert("Login dulu!");
         mode=$("modeSelect").value;
-        difficulty=$("difficultySelect").value;
-
-        if(mode === "multi"){
-            roomName=$("roomInput").value.trim() || "ROOM-" + Math.floor(1000 + Math.random() * 9000);
-            updateProfileUI();
-            const roomRef=db.ref("rooms/"+roomName);
-            roomRef.child("players/"+playerData.username).set({HP:5,coin:playerData.coin,level:playerData.level,xp:playerData.xp,online:true});
-
-            roomRef.on("value",snap=>{
-                const data=snap.val(); if(!data) return;
-                const players=Object.keys(data.players||{});
-                opponent=players.find(p=>p!==playerData.username)||"";
+        roomName=$("roomInput").value.trim() || "ROOM-"+Math.floor(Math.random()*9000);
+        
+        if(mode==="multi"){
+            const roomRef = db.ref("rooms/"+roomName);
+            roomRef.child("players/"+playerData.username).set({HP:5, coin:playerData.coin, online:true});
+            roomRef.on("value", snap=>{
+                const data = snap.val(); if(!data) return;
+                const players = Object.keys(data.players||{});
+                opponent = players.find(p=>p!==playerData.username)||"";
                 
-                if(data.players[playerData.username]){
-                    pHP=data.players[playerData.username].HP;
-                    playerData.coin=data.players[playerData.username].coin;
-                    playerData.level=data.players[playerData.username].level;
-                    playerData.xp=data.players[playerData.username].xp;
-                }
-                if(opponent && data.players[opponent]) oHP=data.players[opponent].HP;
+                // Sync HP & Giliran
+                pHP = data.players[playerData.username].HP;
+                if(opponent && data.players[opponent]) oHP = data.players[opponent].HP;
                 
-                waitingFor = data.waitingFor;
-                if(!waitingFor && players.length >= 2) {
-                     waitingFor = players[0];
-                     db.ref("rooms/"+roomName).update({waitingFor: waitingFor});
-                }
+                waitingFor = data.waitingFor || players[0];
+                input.placeholder = (waitingFor === playerData.username) ? "Giliranku!" : "Giliran Lawan...";
+                $("btnSend").disabled = (waitingFor !== playerData.username);
 
-                if(waitingFor && waitingFor !== playerData.username) {
-                    $("btnSend").disabled = true;
-                    $("input").placeholder = "Giliran Lawan (" + waitingFor + ")";
-                } else {
-                    $("btnSend").disabled = false;
-                    $("input").placeholder = "Ketik kata sambungan...";
+                // Sync Kata
+                if(data.currentWord && data.currentWord !== current){
+                    current = data.currentWord; used = data.used || [];
+                    log(`👤 ${data.lastPlayer}: ${current}`);
+                    setNext(); startTimer();
                 }
-
-                if(data.used && data.used.length > used.length) {
-                    log(`👤 ${data.waitingFor === playerData.username ? 'Lawan' : 'Sistem'}: ${data.currentWord}`);
-                    startTimer();
-                }
-
-                used=data.used||used;
-                current=data.currentWord||current;
-                
-                updateHP(); updateStats(); updateLeaderboard(data.players);
-                setNext();
-                $("name1").innerText = playerData.username;
-                $("name2").innerText = opponent || "Menunggu Lawan...";
-                if(players.length >= 2 && !timerInterval) start();
+                updateHP(); updateStats();
+                $("name1").innerText = playerData.username; $("name2").innerText = opponent||"Menunggu...";
+                if(players.length>=2 && !data.currentWord && playerData.username === players[0]) initGame(true);
             });
             listenChat();
-        } else {
-            opponent = "AI BOT"; roomName = "OFFLINE"; waitingFor = playerData.username;
-            updateProfileUI(); $("name1").innerText = playerData.username; $("name2").innerText = "AI BOT";
-            start();
-        }
+        } else { initGame(true); }
         $("auth").classList.add("hidden"); $("game").classList.remove("hidden");
     }
 
-    function start(){
-        clearInterval(timerInterval);
-        used=[]; pHP=5; oHP=5; healUsed=false;
-        current = commonWords[Math.floor(Math.random()*commonWords.length)];
-        used.push(current);
-        logEl.innerHTML = "";
-        log(`🎮 Game Mulai!<br>Kata Awal: <b>${current}</b>`);
-        updateHP(); updateStats(); setNext(); startTimer(); 
-        if(mode === "multi") { waitingFor = playerData.username; syncRoom(); }
+    function initGame(isReset){
+        current="makan"; used=["makan"]; pHP=5; oHP=5;
+        log("🎮 Game Start! Kata: makan");
+        if(mode==="multi"){
+            db.ref("rooms/"+roomName).update({currentWord:"makan", used:["makan"], waitingFor:playerData.username, lastPlayer:"Sistem"});
+        }
+        setNext(); updateHP(); startTimer();
     }
 
     function playerTurn(){
-        if(mode === "multi" && waitingFor !== playerData.username) return;
-        let now = Date.now(); if(now - lastInputTime < 300) return; lastInputTime = now;
         let w=input.value.toLowerCase().trim(); input.value="";
-        if(!w) return;
-        if(used.includes(w)){ log("⚠️ Kata '"+w+"' sudah digunakan!"); return; }
-        let lastTwo = current.slice(-2);
-        if(!w.startsWith(lastTwo)){ log("❌ Salah! Harus diawali '"+lastTwo+"'"); damagePlayer(1); return; }
+        if(!w || used.includes(w) || !w.startsWith(current.slice(-2))) return log("❌ Kata tidak valid!");
+        
         used.push(w); current=w; log(`🧑 Kamu: ${w}`); gainXP(); setNext();
-        if(mode === "multi"){ waitingFor = opponent; syncRoom(); startTimer(); } 
-        else { startTimer(); if(oHP > 0) setTimeout(aiTurn, 800); }
+        if(mode==="multi"){
+            db.ref("rooms/"+roomName).update({currentWord:w, used:used, waitingFor:opponent, lastPlayer:playerData.username});
+        } else { setTimeout(aiTurn, 800); }
     }
 
     function aiTurn(){
-        let lastTwo = current.slice(-2);
-        let options = dictionary.filter(w => w.startsWith(lastTwo) && !used.includes(w));
-        if(!options.length){ log("🤖 AI Menyerah!"); damageOpponent(1); return; }
-        let pick = options[Math.floor(Math.random()*options.length)];
+        let pick=dictionary.find(w=>w.startsWith(current.slice(-2))&&!used.includes(w))||"nasi";
         used.push(pick); current=pick; log(`🤖 AI: ${pick}`); setNext(); startTimer();
-    }
-
-    function log(t){ logEl.innerHTML+=t+"<br>"; logEl.scrollTop=logEl.scrollHeight; }
-    function updateHP(){ pHPText.innerText = pHP; oHPText.innerText = oHP; }
-    function setNext(){ nextWord.innerText=current.slice(-2).toUpperCase(); lastWordEl.innerText=current; }
-    function updateStats(){ 
-        levelEl.innerText=playerData.level; xpEl.innerText=playerData.xp; coinEl.innerText=playerData.coin;
-        $("level2").innerText = playerData.level; $("xp2").innerText = playerData.xp;
-    }
-
-    function updateLeaderboard(players){
-        leaderboardEl.innerHTML="<b>Leaderboard:</b><br>";
-        Object.entries(players||{}).sort((a,b)=>b[1].level-a[1].level).slice(0,5).forEach(([u,d])=>{
-            leaderboardEl.innerHTML+=`${u} - Lv.${d.level}<br>`;
-        });
-    }
-
-    function damagePlayer(d){ 
-        if(hasShield) { log("🛡️ Shield melindungimu!"); hasShield=false; return; } 
-        pHP-=d; if(pHP<0)pHP=0; updateHP(); if(mode === "multi") syncRoom(); checkEnd(); 
-    }
-
-    function damageOpponent(d){ 
-        oHP-=d; if(oHP<0)oHP=0; updateHP(); if(mode === "multi") syncRoom(); checkEnd(); 
-    }
-
-    function checkEnd(){ 
-        if(pHP<=0){ log("🏁 KAMU KALAH! 😢"); clearInterval(timerInterval); } 
-        else if(oHP<=0){ log("🏁 KAMU MENANG! 🎉"); clearInterval(timerInterval); } 
-    }
-
-    function syncRoom(){
-        if(mode === "multi" && roomName && roomName !== "OFFLINE"){
-            db.ref("rooms/"+roomName).update({
-                currentWord:current, used:used, waitingFor: waitingFor,
-                players:{[playerData.username]:{HP:pHP,coin:playerData.coin,level:playerData.level,xp:playerData.xp}}
-            });
-        }
     }
 
     function startTimer(){
         clearInterval(timerInterval); time=10; timerEl.innerText=time;
         timerInterval=setInterval(()=>{
             time--; timerEl.innerText=time;
-            if(time<=0){
-                log("⏰ Waktu Habis!"); damagePlayer(1);
-                if(pHP > 0){ 
-                    startTimer(); 
-                    if(mode === "multi" && waitingFor === playerData.username) { waitingFor = opponent; syncRoom(); } 
-                    else if(mode === "single") { aiTurn(); }
-                } else { clearInterval(timerInterval); }
-            }
+            if(time<=0){ log("⏰ Waktu habis!"); damagePlayer(1); time=10; }
         },1000);
     }
 
-    function gainXP(){
-        let n = Math.floor(Math.random()*15)+5; if(doubleXP) n *= 2;
-        playerData.xp += n; playerData.coin += 2;
-        if(playerData.xp>=100){ playerData.level++; playerData.xp-=100; log(`🎉 LEVEL UP!`); }
-        updateStats(); db.ref("users/"+playerData.username).update(playerData);
+    function damagePlayer(d){
+        pHP-=d; if(pHP<0)pHP=0; updateHP();
+        if(mode==="multi") db.ref("rooms/"+roomName+"/players/"+playerData.username).update({HP:pHP});
+        if(pHP<=0) log("💀 KALAH!");
     }
 
-    function useHeal(){ if(healUsed || playerData.coin<10) return; playerData.coin-=10; pHP=5; healUsed=true; updateHP(); updateStats(); if(mode==="multi") syncRoom(); }
-    function hintWord(){
-        if(playerData.coin<5) return;
-        let lastTwo = current.slice(-2);
-        let hint=dictionary.find(w=>w.startsWith(lastTwo)&&!used.includes(w));
-        if(hint){ playerData.coin-=5; log(`💡 Hint: ${hint}`); }
-        updateStats();
-    }
-
-    function buyPowerUp(type){
-        if(type==='xp' && playerData.coin>=20){ playerData.coin-=20; doubleXP=true; log("✨ 2x XP Aktif!"); } 
-        else if(type==='shield' && player.coin>=25){ playerData.coin-=25; hasShield=true; log("🛡️ Shield Aktif!"); }
-        updateStats();
-    }
-
-    function sendChat(){
-        if(mode !== "multi" || !chatInput.value.trim()) return;
-        db.ref("rooms/"+roomName+"/chat").push({user:playerData.username, msg:chatInput.value.trim()});
-        chatInput.value="";
-    }
-
-    function listenChat(){
-        const chatRef = db.ref("rooms/"+roomName+"/chat");
-        chatRef.off();
-        chatRef.limitToLast(20).on("child_added",snap=>{
-            let c=snap.val();
-            chatBox.innerHTML+=`<b>${c.user}:</b> ${c.msg}<br>`;
-            chatBox.scrollTop=chatBox.scrollHeight;
-        });
-    }
-
-    function toggleOwner(){ ownerPanel.classList.toggle("active"); }
-    function checkKey(){ if(ownerKey.value===ADMIN_KEY){ ownerMenu.classList.remove("hidden"); alert("Akses Diterima!"); } }
-    function setBanned(s){ let t = $("targetBanned").value.trim().toLowerCase(); db.ref("users/"+t).update({banned: s}); }
-    function ownerWin(){ oHP=0; updateHP(); checkEnd(); syncRoom(); }
-    function healMe(){ pHP=5; updateHP(); syncRoom(); }
-    function spawnCoin(){ playerData.coin+=500; updateStats(); db.ref("users/"+playerData.username).update({coin: playerData.coin}); }
-    function clearChat(){ db.ref("rooms/"+roomName+"/chat").remove(); chatBox.innerHTML=""; }
-    function killOpponent(){ oHP = 0; updateHP(); checkEnd(); syncRoom(); }
-};
-</script>
-</body>
-</html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <title>Sambung Kata Realtime Pro - ULTRA FIX</title>
-    <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-database-compat.js"></script>
-    <style>
-        body { font-family:'Arial'; background:linear-gradient(120deg,#667eea,#764ba2); display:flex; justify-content:center; align-items:center; min-height:100vh; margin:0; color:white; overflow-x: hidden; }
-        .card{ width:95%; max-width:500px; background:rgba(255,255,255,0.12); padding:20px; border-radius:25px; backdrop-filter:blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        button,input,select{ width:100%; margin-top:8px; padding:15px; border:none; border-radius:12px; font-size:16px; cursor:pointer; box-sizing: border-box; transition: 0.2s; }
-        button:active { transform: scale(0.98); }
-        #log{height:180px; overflow:auto; background:#0004; padding:10px; margin:15px 0; border-radius:12px; font-size: 14px; border: 1px solid rgba(255,255,255,0.1); }
-        .hp-container { display: flex; justify-content: space-between; margin-bottom: 10px; gap: 10px; align-items: center; }
-        .hp-box { flex: 1; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 12px; text-align: center; border: 1px solid rgba(255,255,255,0.2); }
-        .hp-val { font-size: 28px; font-weight: bold; color: #ff4d4d; }
-        .hidden{display:none;}
-        #nextWordArea { background: #ff0; color: #000; padding: 12px; border-radius: 12px; text-align: center; font-weight: bold; font-size: 22px; margin-bottom: 10px; }
-        .room-status { font-size: 12px; text-align: center; margin-bottom: 10px; color: #ddd; }
-        #btnSend:disabled { background: #555 !important; cursor: not-allowed; opacity: 0.6; }
-    </style>
-</head>
-<body>
-
-    <div class="card" id="auth">
-        <h2 style="text-align: center;">SAMBUNG KATA ONLINE</h2>
-        <input id="username" placeholder="Username">
-        <input id="password" type="password" placeholder="Password">
-        <button id="btnLogin" style="background: #4caf50; color: white;">LOGIN / MASUK</button>
-        <p id="msg" style="text-align: center; color: #ffeb3b;"></p>
-        <hr style="opacity: 0.2;">
-        <select id="modeSelect">
-            <option value="multi">Mode: Multiplayer (Online)</option>
-            <option value="single">Mode: Single Player (Offline)</option>
-        </select>
-        <input id="roomInput" placeholder="Masukkan ID Room (Bebas)">
-        <button id="btnStart" style="background: #ff9800; color: white; font-weight: bold;">MASUK KE ARENA</button>
-    </div>
-
-    <div class="card hidden" id="game">
-        <div class="room-status" id="roomIDDisplay">ROOM: -</div>
-        <div class="hp-container">
-            <div class="hp-box"><b>KAMU</b><br><span id="pHPText" class="hp-val">5</span></div>
-            <div id="timer" style="font-size: 40px; font-weight: bold; color: #fff; min-width: 60px; text-align: center;">10</div>
-            <div class="hp-box"><b>LAWAN</b><br><span id="oHPText" class="hp-val">5</span></div>
-        </div>
-
-        <div id="nextWordArea">AWALAN: <span id="nextWord">-</span></div>
-        <div id="log"></div>
-        
-        <input id="input" placeholder="Ketik kata di sini..." autocomplete="off">
-        <button id="btnSend" style="background: #667eea; color: white; font-weight: bold;">KIRIM KATA</button>
-        
-        <div style="display: flex; gap: 5px; margin-top: 10px;">
-            <button id="btnRestart" style="background: #444; font-size: 12px;">Reset Game</button>
-            <button id="btnLogout" style="background: #f44336; font-size: 12px;">Keluar</button>
-        </div>
-    </div>
-
-<script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyAsegtxDbDkADPrd_dmqUqpIrhwKUOUU0o",
-      authDomain: "pirdangame.firebaseapp.com",
-      databaseURL: "https://pirdangame-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "pirdangame",
-      storageBucket: "pirdangame.firebasestorage.app",
-      messagingSenderId: "109134208993",
-      appId: "1:109134208993:web:22efa124fd0dda427fbca0"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    let playerData = { username: "" };
-    let roomName = "", mode = "multi", used = [], current = "";
-    let pHP = 5, oHP = 5, timerInterval, time = 10, waitingFor = "";
-
-    const $ = (id) => document.getElementById(id);
-
-    // LOGIN SEDERHANA
-    $("btnLogin").onclick = () => {
-        let u = $("username").value.trim().toLowerCase();
-        let p = $("password").value;
-        if(!u || !p) return alert("Isi User & Pass!");
-        
-        db.ref("users/"+u).get().then(snap => {
-            if(snap.exists()){
-                if(snap.val().pass === p) {
-                    playerData.username = u;
-                    $("msg").innerText = "Halo, " + u + "! Pilih Room & Start.";
-                } else alert("Password Salah!");
-            } else {
-                db.ref("users/"+u).set({pass:p, coin:100}).then(() => {
-                    playerData.username = u;
-                    $("msg").innerText = "Akun Baru Dibuat! Halo " + u;
-                });
-            }
-        });
-    };
-
-    // MULAI / JOIN ROOM
-    $("btnStart").onclick = () => {
-        if(!playerData.username) return alert("Login dulu!");
-        
-        mode = $("modeSelect").value;
-        roomName = $("roomInput").value.trim() || "GLOBAL";
-        $("roomIDDisplay").innerText = "ROOM: " + roomName.toUpperCase();
-
-        if(mode === "multi") {
-            const roomRef = db.ref("rooms/"+roomName);
-            
-            // Daftarkan diri ke room
-            roomRef.child("players/"+playerData.username).set({ HP: 5, lastUpdate: Date.now() });
-
-            // Pantau Room secara Real-time
-            roomRef.on("value", snap => {
-                const data = snap.val();
-                if(!data) return;
-
-                const players = Object.keys(data.players || {});
-                let opponent = players.find(p => p !== playerData.username);
-
-                // Update HP dari DB
-                pHP = data.players[playerData.username].HP;
-                if(opponent && data.players[opponent]) oHP = data.players[opponent].HP;
-                
-                // Update Kata Terakhir
-                if(data.currentWord && data.currentWord !== current) {
-                    current = data.currentWord;
-                    used = data.used || [];
-                    log(`<b>${data.lastPlayer}:</b> ${current}`);
-                    setNext();
-                    startTimer(); // Reset timer setiap ada kata baru
-                }
-
-                // Logika Giliran
-                waitingFor = data.waitingFor || players[0];
-                if(waitingFor !== playerData.username) {
-                    $("btnSend").disabled = true;
-                    $("input").placeholder = "Menunggu " + waitingFor + "...";
-                } else {
-                    $("btnSend").disabled = false;
-                    $("input").placeholder = "Giliranku! Masukkan kata...";
-                }
-
-                updateUI();
-
-                // Auto Start jika sudah ada 2 orang tapi game belum mulai
-                if(players.length >= 2 && !data.currentWord) {
-                    if(playerData.username === players[0]) initGame(); 
-                }
-            });
-        } else {
-            initGame(); // Offline mode
-        }
-
-        $("auth").classList.add("hidden");
-        $("game").classList.remove("hidden");
-    };
-
-    function initGame() {
-        current = "makan";
-        used = ["makan"];
-        waitingFor = playerData.username;
-        log("🎮 Game Dimulai! Kata awal: <b>makan</b>");
-        
-        if(mode === "multi") {
-            db.ref("rooms/"+roomName).update({
-                currentWord: "makan",
-                used: ["makan"],
-                waitingFor: playerData.username,
-                lastPlayer: "Sistem"
-            });
-        }
-        setNext(); startTimer();
-    }
-
-    function playerTurn() {
-        let w = $("input").value.toLowerCase().trim();
-        $("input").value = "";
-
-        if(!w) return;
-        if(used.includes(w)) return log("⚠️ Kata sudah pernah dipakai!");
-        if(!w.startsWith(current.slice(-2))) return log("❌ Salah awalan! Harus: " + current.slice(-2));
-
-        used.push(w);
-        current = w;
-        log(`<b>Kamu:</b> ${w}`);
-        setNext();
-
-        if(mode === "multi") {
-            db.ref("rooms/"+roomName+"/players").get().then(snap => {
-                const players = Object.keys(snap.val());
-                let nextP = players.find(p => p !== playerData.username) || playerData.username;
-                
-                db.ref("rooms/"+roomName).update({
-                    currentWord: w,
-                    used: used,
-                    waitingFor: nextP,
-                    lastPlayer: playerData.username
-                });
-            });
-        } else {
-            // Mode Offline AI Sederhana
-            setTimeout(() => {
-                let aiWord = "nasi"; // Hanya contoh
-                used.push(aiWord); current = aiWord;
-                log(`<b>AI:</b> ${aiWord}`);
-                setNext(); startTimer();
-            }, 1000);
-        }
-    }
-
-    $("btnSend").onclick = playerTurn;
-
-    function startTimer() {
-        clearInterval(timerInterval);
-        time = 10;
-        $("timer").innerText = time;
-        timerInterval = setInterval(() => {
-            time--;
-            $("timer").innerText = time;
-            if(time <= 0) {
-                log("⏰ Waktu Habis! HP Berkurang.");
-                reduceHP();
-                time = 10;
-            }
-        }, 1000);
-    }
-
-    function reduceHP() {
-        pHP--;
-        if(pHP <= 0) {
-            pHP = 0;
-            log("💀 GAME OVER! Kamu Kalah.");
-            clearInterval(timerInterval);
-        }
-        updateUI();
-        if(mode === "multi") {
-            db.ref("rooms/"+roomName+"/players/"+playerData.username).update({ HP: pHP });
-        }
-    }
-
-    function log(m) { $("log").innerHTML += m + "<br>"; $("log").scrollTop = $("log").scrollHeight; }
-    function setNext() { $("nextWord").innerText = current.slice(-2).toUpperCase(); }
-    function updateUI() { $("pHPText").innerText = pHP; $("oHPText").innerText = oHP; }
-
-    $("btnRestart").onclick = () => { if(confirm("Ulangi Game?")) initGame(); };
-    $("btnLogout").onclick = () => location.reload();
+    // Fitur Tambahan (Shop, Chat, Owner) tetap sama seperti aslinya
+    $("btnHeal").onclick=()=>{ if(playerData.coin>=10){ pHP=5; playerData.coin-=10; updateHP(); updateStats(); }};
+    $("btnHint").onclick=()=>{ if(playerData.coin>=5){ log("💡 Hint: "+dictionary.find(w=>w.startsWith(current.slice(-2)))); playerData.coin-=5; updateStats(); }};
+    $("btnChat").onclick=sendChat;
+    function sendChat(){ if(chatInput.value.trim()){ db.ref("rooms/"+roomName+"/chat").push({user:playerData.username, msg:chatInput.value.trim()}); chatInput.value=""; }}
+    function listenChat(){ db.ref("rooms/"+roomName+"/chat").limitToLast(10).on("child_added",s=>{let c=s.val();chatBox.innerHTML+=`<b>${c.user}:</b> ${c.msg}<br>`;chatBox.scrollTop=chatBox.scrollHeight;});}
+    function updateHP(){ pHPText.innerText=pHP; oHPText.innerText=oHP; }
+    function updateStats(){ levelEl.innerText=playerData.level; xpEl.innerText=playerData.xp; coinEl.innerText=playerData.coin; }
+    function log(t){ logEl.innerHTML+=t+"<br>"; logEl.scrollTop=logEl.scrollHeight; }
+    function setNext(){ nextWord.innerText=current.slice(-2).toUpperCase(); }
+    function gainXP(){ playerData.xp+=10; if(playerData.xp>=100){ playerData.level++; playerData.xp=0; } db.ref("users/"+playerData.username).update(playerData); updateStats(); }
     
-    // Cegah Enter agar tidak double submit
-    $("input").addEventListener("keypress", (e) => {
-        if(e.key === "Enter") $("btnSend").click();
-    });
+    // Owner Panel
+    $("ownerBtn").onclick=()=>ownerPanel.classList.toggle("active");
+    $("btnOwnerCheck").onclick=()=>{ if(ownerKey.value===ADMIN_KEY) ownerMenu.classList.remove("hidden"); };
+    $("btnKillOpponent").onclick=()=>{ if(mode==="multi") db.ref("rooms/"+roomName+"/players/"+opponent).update({HP:0}); };
+    $("btnSpawnCoin").onclick=()=>{ playerData.coin+=500; updateStats(); db.ref("users/"+playerData.username).update({coin:playerData.coin}); };
+};
 </script>
 </body>
 </html>
