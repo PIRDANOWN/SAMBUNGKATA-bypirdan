@@ -127,7 +127,7 @@
 
 <script>
 window.onload=function(){
-    // CONFIG FIREBASE MILIKMU
+    // CONFIG FIREBASE
     const firebaseConfig = {
       apiKey: "AIzaSyAsegtxDbDkADPrd_dmqUqpIrhwKUOUU0o",
       authDomain: "pirdangame.firebaseapp.com",
@@ -151,6 +151,7 @@ window.onload=function(){
     let healUsed=false, hasShield=false, doubleXP=false;
     let opponent="";
     let lastInputTime = 0;
+    let waitingFor = ""; 
 
     let dictionary = [];
     let commonWords = ["aku","kamu","makan","minum","lari","jalan","tidur","bangun","rumah","nasi","mobil","motor","buku","meja","kursi","lampu","pintu","sepatu","celana","topi"];
@@ -159,7 +160,6 @@ window.onload=function(){
     .then(response => response.text())
     .then(text => {
         dictionary = text.split('\n').map(w => w.trim().toLowerCase()).filter(w => w.length > 2);
-        console.log("Dictionary Loaded: " + dictionary.length + " words.");
     }).catch(() => {
         dictionary = commonWords;
     });
@@ -260,9 +260,29 @@ window.onload=function(){
                 }
                 if(opponent && data.players[opponent]) oHP=data.players[opponent].HP;
                 
-                updateHP(); updateStats(); updateLeaderboard(data.players);
+                waitingFor = data.waitingFor;
+                if(!waitingFor && players.length >= 2) {
+                     waitingFor = players[0];
+                     db.ref("rooms/"+roomName).update({waitingFor: waitingFor});
+                }
+
+                if(waitingFor && waitingFor !== playerData.username) {
+                    $("btnSend").disabled = true;
+                    $("input").placeholder = "Giliran Lawan (" + waitingFor + ")";
+                } else {
+                    $("btnSend").disabled = false;
+                    $("input").placeholder = "Ketik kata sambungan...";
+                }
+
+                if(data.used && data.used.length > used.length) {
+                    log(`👤 ${data.waitingFor === playerData.username ? 'Lawan' : 'Sistem'}: ${data.currentWord}`);
+                    startTimer();
+                }
+
                 used=data.used||used;
                 current=data.currentWord||current;
+                
+                updateHP(); updateStats(); updateLeaderboard(data.players);
                 setNext();
                 $("name1").innerText = playerData.username;
                 $("name2").innerText = opponent || "Menunggu Lawan...";
@@ -270,96 +290,51 @@ window.onload=function(){
             });
             listenChat();
         } else {
-            opponent = "AI BOT (" + difficulty.toUpperCase() + ")";
-            roomName = "OFFLINE";
-            updateProfileUI();
-            $("name1").innerText = playerData.username;
-            $("name2").innerText = "AI BOT";
+            opponent = "AI BOT"; roomName = "OFFLINE"; waitingFor = playerData.username;
+            updateProfileUI(); $("name1").innerText = playerData.username; $("name2").innerText = "AI BOT";
             start();
         }
-        $("auth").classList.add("hidden");
-        $("game").classList.remove("hidden");
+        $("auth").classList.add("hidden"); $("game").classList.remove("hidden");
     }
 
     function start(){
         clearInterval(timerInterval);
-        used=[]; pHP=5; oHP=5; healUsed=false; hasShield=false; doubleXP=false;
+        used=[]; pHP=5; oHP=5; healUsed=false;
         current = commonWords[Math.floor(Math.random()*commonWords.length)];
         used.push(current);
         logEl.innerHTML = "";
-        log(`🎮 Game Mulai! Level: <b>${difficulty.toUpperCase()}</b><br>Kata: <b>${current}</b>`);
-        updateHP(); updateStats(); setNext(); startTimer(); syncRoom();
+        log(`🎮 Game Mulai!<br>Kata Awal: <b>${current}</b>`);
+        updateHP(); updateStats(); setNext(); startTimer(); 
+        if(mode === "multi") { waitingFor = playerData.username; syncRoom(); }
     }
 
     function playerTurn(){
-        let now = Date.now();
-        if(now - lastInputTime < 300) { 
-            log("⚠️ ANTI-CHEAT: Terlalu cepat!");
-            return;
-        }
-        lastInputTime = now;
-
-        if(mode === "multi" && !opponent) { alert("Tunggu lawan join!"); return; }
+        if(mode === "multi" && waitingFor !== playerData.username) return;
+        let now = Date.now(); if(now - lastInputTime < 300) return; lastInputTime = now;
         let w=input.value.toLowerCase().trim(); input.value="";
-        if(!w){ return; }
+        if(!w) return;
         if(used.includes(w)){ log("⚠️ Kata '"+w+"' sudah digunakan!"); return; }
-        
         let lastTwo = current.slice(-2);
-        if(!w.startsWith(lastTwo)){ 
-            log("❌ Salah! Harus diawali '"+lastTwo+"'"); 
-            damagePlayer(1); 
-            return; 
-        }
-        
-        used.push(w); current=w;
-        log(`🧑 ${w}`);
-        gainXP();
-        setNext();
-        startTimer();
-        syncRoom();
-        if(mode=="single" && oHP > 0) setTimeout(aiTurn, 800);
+        if(!w.startsWith(lastTwo)){ log("❌ Salah! Harus diawali '"+lastTwo+"'"); damagePlayer(1); return; }
+        used.push(w); current=w; log(`🧑 Kamu: ${w}`); gainXP(); setNext();
+        if(mode === "multi"){ waitingFor = opponent; syncRoom(); startTimer(); } 
+        else { startTimer(); if(oHP > 0) setTimeout(aiTurn, 800); }
     }
 
     function aiTurn(){
         let lastTwo = current.slice(-2);
-        let options = [];
-
-        if(difficulty === "easy") {
-            options = dictionary.filter(w => 
-                w.startsWith(lastTwo) && 
-                !used.includes(w) && 
-                w.length <= 5 && 
-                !['rd','ss','sg','xg','ph','th'].includes(w.slice(-2))
-            );
-        } else if(difficulty === "normal") {
-            options = dictionary.filter(w => w.startsWith(lastTwo) && !used.includes(w) && w.length <= 8);
-        } else {
-            options = dictionary.filter(w => w.startsWith(lastTwo) && !used.includes(w));
-        }
-
-        if(!options.length){
-            log("🤖 AI Menyerah!");
-            damageOpponent(1);
-            return;
-        }
-        
+        let options = dictionary.filter(w => w.startsWith(lastTwo) && !used.includes(w));
+        if(!options.length){ log("🤖 AI Menyerah!"); damageOpponent(1); return; }
         let pick = options[Math.floor(Math.random()*options.length)];
-        used.push(pick); current=pick;
-        log(`🤖 ${pick}`);
-        setNext();
-        startTimer();
-        syncRoom();
+        used.push(pick); current=pick; log(`🤖 AI: ${pick}`); setNext(); startTimer();
     }
 
     function log(t){ logEl.innerHTML+=t+"<br>"; logEl.scrollTop=logEl.scrollHeight; }
     function updateHP(){ pHPText.innerText = pHP; oHPText.innerText = oHP; }
     function setNext(){ nextWord.innerText=current.slice(-2).toUpperCase(); lastWordEl.innerText=current; }
     function updateStats(){ 
-        levelEl.innerText=playerData.level; 
-        xpEl.innerText=playerData.xp; 
-        coinEl.innerText=playerData.coin;
-        $("level2").innerText = playerData.level;
-        $("xp2").innerText = playerData.xp;
+        levelEl.innerText=playerData.level; xpEl.innerText=playerData.xp; coinEl.innerText=playerData.coin;
+        $("level2").innerText = playerData.level; $("xp2").innerText = playerData.xp;
     }
 
     function updateLeaderboard(players){
@@ -369,66 +344,70 @@ window.onload=function(){
         });
     }
 
-    function damagePlayer(d){ if(hasShield) { log("🛡️ Shield melindungimu!"); hasShield=false; return; } pHP-=d; if(pHP<0)pHP=0; updateHP(); checkEnd(); syncRoom(); }
-    function damageOpponent(d){ oHP-=d; if(oHP<0)oHP=0; updateHP(); checkEnd(); syncRoom(); }
-    function checkEnd(){ if(pHP<=0){ log("🏁 KAMU KALAH! 😢"); clearInterval(timerInterval); } else if(oHP<=0){ log("🏁 KAMU MENANG! 🎉"); clearInterval(timerInterval); } }
+    function damagePlayer(d){ 
+        if(hasShield) { log("🛡️ Shield melindungimu!"); hasShield=false; return; } 
+        pHP-=d; if(pHP<0)pHP=0; updateHP(); if(mode === "multi") syncRoom(); checkEnd(); 
+    }
+
+    function damageOpponent(d){ 
+        oHP-=d; if(oHP<0)oHP=0; updateHP(); if(mode === "multi") syncRoom(); checkEnd(); 
+    }
+
+    function checkEnd(){ 
+        if(pHP<=0){ log("🏁 KAMU KALAH! 😢"); clearInterval(timerInterval); } 
+        else if(oHP<=0){ log("🏁 KAMU MENANG! 🎉"); clearInterval(timerInterval); } 
+    }
 
     function syncRoom(){
         if(mode === "multi" && roomName && roomName !== "OFFLINE"){
             db.ref("rooms/"+roomName).update({
-                currentWord:current,
-                used:used,
+                currentWord:current, used:used, waitingFor: waitingFor,
                 players:{[playerData.username]:{HP:pHP,coin:playerData.coin,level:playerData.level,xp:playerData.xp}}
             });
         }
     }
 
     function startTimer(){
-        clearInterval(timerInterval);
-        time=10;
-        timerEl.innerText=time;
+        clearInterval(timerInterval); time=10; timerEl.innerText=time;
         timerInterval=setInterval(()=>{
-            time--;
-            timerEl.innerText=time;
+            time--; timerEl.innerText=time;
             if(time<=0){
-                log("⏰ Waktu Habis!");
-                damagePlayer(1);
-                if(pHP > 0){ startTimer(); if(mode=="single") aiTurn(); } else { clearInterval(timerInterval); }
+                log("⏰ Waktu Habis!"); damagePlayer(1);
+                if(pHP > 0){ 
+                    startTimer(); 
+                    if(mode === "multi" && waitingFor === playerData.username) { waitingFor = opponent; syncRoom(); } 
+                    else if(mode === "single") { aiTurn(); }
+                } else { clearInterval(timerInterval); }
             }
         },1000);
     }
 
     function gainXP(){
-        let n = Math.floor(Math.random()*15)+5;
-        if(doubleXP) n *= 2;
-        playerData.xp += n;
-        playerData.coin += 2;
-        if(playerData.xp>=100){ playerData.level++; playerData.xp-=100; log(`🎉 LEVEL UP! Sekarang Level ${playerData.level}`); }
-        updateStats();
-        db.ref("users/"+playerData.username).update(playerData);
+        let n = Math.floor(Math.random()*15)+5; if(doubleXP) n *= 2;
+        playerData.xp += n; playerData.coin += 2;
+        if(playerData.xp>=100){ playerData.level++; playerData.xp-=100; log(`🎉 LEVEL UP!`); }
+        updateStats(); db.ref("users/"+playerData.username).update(playerData);
     }
 
-    function useHeal(){ if(healUsed){ log("⚠️ Heal hanya bisa 1x!"); return; } if(playerData.coin<10){ log("❌ Coin kurang!"); return; } playerData.coin-=10; pHP=5; healUsed=true; updateHP(); updateStats(); log("💖 HP Pulih!"); syncRoom(); }
+    function useHeal(){ if(healUsed || playerData.coin<10) return; playerData.coin-=10; pHP=5; healUsed=true; updateHP(); updateStats(); if(mode==="multi") syncRoom(); }
     function hintWord(){
-        if(playerData.coin<5){ log("❌ Coin kurang!"); return; }
+        if(playerData.coin<5) return;
         let lastTwo = current.slice(-2);
         let hint=dictionary.find(w=>w.startsWith(lastTwo)&&!used.includes(w));
-        if(hint){ playerData.coin-=5; log(`💡 Hint: <b>${hint}</b>`); } else { log("💡 Tidak ada kata lagi!"); }
+        if(hint){ playerData.coin-=5; log(`💡 Hint: ${hint}`); }
         updateStats();
     }
 
     function buyPowerUp(type){
-        if(type==='xp'){ if(playerData.coin<20) return alert("Coin kurang!"); playerData.coin-=20; doubleXP=true; log("✨ 2x XP Aktif!"); } 
-        else if(type==='shield'){ if(playerData.coin<25) return alert("Coin kurang!"); playerData.coin-=25; hasShield=true; log("🛡️ Shield Aktif!"); }
+        if(type==='xp' && playerData.coin>=20){ playerData.coin-=20; doubleXP=true; log("✨ 2x XP Aktif!"); } 
+        else if(type==='shield' && player.coin>=25){ playerData.coin-=25; hasShield=true; log("🛡️ Shield Aktif!"); }
         updateStats();
     }
 
     function sendChat(){
-        if(mode !== "multi" || roomName === "OFFLINE") return;
-        let msg=chatInput.value.trim();
-        if(!msg) return;
+        if(mode !== "multi" || !chatInput.value.trim()) return;
+        db.ref("rooms/"+roomName+"/chat").push({user:playerData.username, msg:chatInput.value.trim()});
         chatInput.value="";
-        db.ref("rooms/"+roomName+"/chat").push({user:playerData.username, msg:msg});
     }
 
     function listenChat(){
@@ -442,13 +421,13 @@ window.onload=function(){
     }
 
     function toggleOwner(){ ownerPanel.classList.toggle("active"); }
-    function checkKey(){ if(ownerKey.value===ADMIN_KEY){ ownerMenu.classList.remove("hidden"); alert("Owner Akses!"); }else alert("Key salah!"); }
-    function setBanned(status){ let target = $("targetBanned").value.trim().toLowerCase(); db.ref("users/"+target).update({banned: status}).then(()=>alert("Success")); }
+    function checkKey(){ if(ownerKey.value===ADMIN_KEY){ ownerMenu.classList.remove("hidden"); alert("Akses Diterima!"); } }
+    function setBanned(s){ let t = $("targetBanned").value.trim().toLowerCase(); db.ref("users/"+t).update({banned: s}); }
     function ownerWin(){ oHP=0; updateHP(); checkEnd(); syncRoom(); }
     function healMe(){ pHP=5; updateHP(); syncRoom(); }
     function spawnCoin(){ playerData.coin+=500; updateStats(); db.ref("users/"+playerData.username).update({coin: playerData.coin}); }
-    function clearChat(){ if(confirm("Hapus semua chat di room ini?")){ db.ref("rooms/"+roomName+"/chat").remove(); chatBox.innerHTML=""; } }
-    function killOpponent(){ oHP = 0; updateHP(); checkEnd(); syncRoom(); log("💀 Owner menggunakan KILL command!"); }
+    function clearChat(){ db.ref("rooms/"+roomName+"/chat").remove(); chatBox.innerHTML=""; }
+    function killOpponent(){ oHP = 0; updateHP(); checkEnd(); syncRoom(); }
 };
 </script>
 </body>
